@@ -1,0 +1,87 @@
+#!/bin/bash
+SOLVING_PROCEDURE=solution_process.md
+SOLVING_REVIEW=solution_review.md
+LANGUAGE_EXT=(cpp)
+
+function contains() {
+	local element=$1
+
+	shift 1;
+
+	local array=$@
+
+	for item in ${array[@]}
+	do
+		if [ $item = $element ]
+		then
+			return 0
+		fi
+	done
+	return 1
+}
+
+function make_sources() {
+	local dir=$1
+	for ext in ${LANGUAGE_EXT[@]}
+	do
+		touch $dir/main.$ext
+	done
+
+}
+
+function new_problem() {
+	DIR_NAME=$1
+
+	if [ -z $DIR_NAME ]
+	then
+		echo "Please enter your new problem name."
+		return
+	fi
+
+	if [ $DIR_NAME = 'test' ]
+	then
+		echo "The name cannot be used as a problem name."
+		return
+	fi
+
+	set -e
+
+	if contains "rs" "${LANGUAGE_EXT[@]}"
+	then
+		cargo new $DIR_NAME --vcs none
+		cp rustfmt.toml ./$DIR_NAME/
+		make_sources ./$DIR_NAME/src/		
+	else
+		mkdir -p $DIR_NAME/src/
+		make_sources ./$DIR_NAME/src/
+	fi
+
+	mkdir $DIR_NAME/{input,output}
+	sed "s/problem_name/$DIR_NAME/" ./$SOLVING_PROCEDURE > ./$DIR_NAME/$SOLVING_PROCEDURE
+	cp ./$SOLVING_REVIEW ./$DIR_NAME/
+	cp "./test.sh" ./$DIR_NAME/
+
+	set +e
+}
+
+function help_message() {
+	cat <<HELP
+Usage: ./ps_tool COMMAND
+
+COMMAND			Description
+help			show this message
+new problem_name	create new problem solving necessaries.
+
+HELP
+}
+
+
+case $1 in
+	new)
+	shift 1
+	new_problem $@
+	;;
+	*)
+	help_message
+	;;
+esac
